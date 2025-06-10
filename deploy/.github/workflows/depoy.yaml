@@ -1,0 +1,35 @@
+name: Snowflake SQL Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-to-snowflake:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install SnowSQL
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl
+        curl -O https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.2/linux_x86_64/snowsql-linux_x86_64.zip
+        unzip snowsql-linux_x86_64.zip
+        sudo ./snowsql-linux_x86_64/install
+
+    - name: Run SQL Script in Snowflake
+      run: |
+        ~/bin/snowsql -a ${{ secrets.SNOWSQL_ACCOUNT }} -u ${{ secrets.SNOWSQL_USER }} \
+        -r ${{ secrets.SNOWSQL_ROLE }} \
+        -d ${{ secrets.SNOWSQL_DATABASE }} \
+        -w ${{ secrets.SNOWSQL_WAREHOUSE }} \
+        -q "select current_version();"
+        ~/bin/snowsql -a ${{ secrets.SNOWSQL_ACCOUNT }} -u ${{ secrets.SNOWSQL_USER }} \
+        -r ${{ secrets.SNOWSQL_ROLE }} \
+        -d ${{ secrets.SNOWSQL_DATABASE }} \
+        -w ${{ secrets.SNOWSQL_WAREHOUSE }} \
+        -f deploy/create_table.sql
